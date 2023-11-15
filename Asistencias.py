@@ -124,6 +124,61 @@ def actualizar_tabla(tree, ide): # Limpia la tabla y recarga los datos
     # Cierra la conexión con la BD
     conexion.close()
 
+def ventana_admin():
+    print("Bienvenido Admin")
+    admin_id = "Admin"
+    user = admin_id
+    admin = tk.Tk()
+
+    admin.title("Panel de Adminitrador")
+    admin.geometry("450x310")
+
+    lbl_name = ttk.Label(admin, text="User: " + user, font=("Arial",11))
+    lbl_name.place(x=20, y=20)
+
+    boton_salir = ttk.Button(admin, text="Salir", command=lambda:admin.destroy())
+    boton_salir.place(x=360, y=20)
+
+    def cargar_datos(tree):
+        # Conectar a la base de datos SQLite
+        conexion = sqlite3.connect("database/BD.sqlite3")
+        cursor = conexion.cursor()
+
+        # Ejecutar la consulta para obtener los datos de la tabla
+        cursor.execute("SELECT * FROM asistencias")
+        datos = cursor.fetchall()
+
+        # Cargar datos en la tabla
+        for dato in datos:
+                tree.insert("", "end", values=dato)
+
+        # Cerrar la conexión a la base de datos
+        conexion.close()
+
+    # Crear el Treeview
+    tree = ttk.Treeview(admin, columns=("ID", "Nombre", "Fecha", "Hora" , "Asistencia"), show="headings")
+
+    # Configurar encabezados
+    tree.heading("ID", text="ID")
+    tree.heading("Nombre", text="Nombre")
+    tree.heading("Fecha", text="Fecha")
+    tree.heading("Hora", text="Hora")
+    tree.heading("Asistencia", text="Asistencia")
+
+    # Configurar columnas
+    tree.column("ID", width=50)
+    tree.column("Nombre", width=100)
+    tree.column("Fecha", width=100)
+    tree.column("Hora", width=80)
+    tree.column("Asistencia", width=100)
+
+    cargar_datos(tree)
+
+    #Boton para Recargar Datos
+    boton_recargar = ttk.Button(admin, text="Agregar Alumno")
+    tree.place(x=10,y=60)    #Configuracion del Boton Recargar
+    boton_recargar.place(x=250,y=20)
+
 def validar(ident, pwd):
     ide = ident.get()
     contra = pwd.get()
@@ -139,42 +194,30 @@ def validar(ident, pwd):
     conexion.close()
 
     if ide == admin_id and contra == admin_pwd:
-        print("Bienvenido Admin")
-        root.destroy()
-        user = admin_id
-        admin = tk.Tk()
+        ventana_admin()
 
-        admin.title("Panel de Adminitrador")
-        admin.geometry("400x400")
-
-        lbl_name = ttk.Label(admin, text="User: " + user)
-        lbl_name.place(x=20, y=20)
-
-        boton_salir = ttk.Button(admin, text="Salir", command=lambda:admin.destroy())
-        boton_salir.place(x=300, y=20)
     elif fila:
-        root.destroy()
         code = ide
         nombre = fila[1]
         print("Sesion Iniciada con Exito")
         cuenta = tk.Tk()
 
         cuenta.title("Cuenta de @" + nombre)
-        cuenta.geometry("450x300")
+        cuenta.geometry("450x320")
 
         lbl_name = tk.Label(cuenta, text="Alumno: " + nombre)
         lbl_name.place(x=20, y=20)
         lbl_code = tk.Label(cuenta, text="ID: " + code)
         lbl_code.place(x=20, y=40)
 
-        marcar = tk.Button(cuenta, text="Marcar Asistencia", command=escuchar_comando)
-        marcar.place(x=300, y=10)
+        marcar = ttk.Button(cuenta, text="Marcar Asistencia", command=escuchar_comando)
+        marcar.place(x=330, y=10)
 
-        boton_actualizar = tk.Button(cuenta, text="Actualizar", command=lambda:actualizar_tabla(tree, ide))
-        boton_actualizar.place(x=300, y=40)
+        boton_actualizar = ttk.Button(cuenta, text="Actualizar", command=lambda:actualizar_tabla(tree, ide))
+        boton_actualizar.place(x=270, y=40)
 
-        boton_salir = tk.Button(cuenta, text="Salir", command=lambda:cuenta.destroy())
-        boton_salir.place(x=370, y=40)
+        boton_salir = ttk.Button(cuenta, text="Salir", command=lambda:cuenta.destroy())
+        boton_salir.place(x=358, y=40)
 
         tree = ttk.Treeview(cuenta, columns=("ID", "Nombre", "Fecha", "Hora", "Asistencia"), show="headings")
 
@@ -212,25 +255,28 @@ def validar(ident, pwd):
         print('''Credenciales Incorrectas,
               Intentelo Nuevamente''')
 
-root = tk.Tk()
-root.title("Programa de Asistencias")
-root.geometry("250x200")
+def inicio_sesion():
+    root = tk.Tk()
+    root.title("Programa de Asistencias")
+    root.geometry("250x200")
 
-lbl_id = Label(root, text="Ingrese su ID:", font=("Arial",11))
-lbl_id.place(x=20, y=20)
-ident = ttk.Entry(root, width=25, font=("Arial",11))
-ident.place(x=20, y=50)
+    lbl_id = Label(root, text="Ingrese su ID:", font=("Arial",11))
+    lbl_id.place(x=20, y=20)
+    ident = ttk.Entry(root, width=25, font=("Arial",11))
+    ident.place(x=20, y=50)
 
-lbl_pwd = Label(root, text="Ingrese su Contraseña:", font=("Arial",11))
-lbl_pwd.place(x=20, y=80)
-pwd = ttk.Entry(root, width=25, show="*", font=("Arial",11))
-pwd.place(x=20, y=110)
+    lbl_pwd = Label(root, text="Ingrese su Contraseña:", font=("Arial",11))
+    lbl_pwd.place(x=20, y=80)
+    pwd = ttk.Entry(root, width=25, show="*", font=("Arial",11))
+    pwd.place(x=20, y=110)
 
-boton_validar = ttk.Button(root, text="Ingresar", command=lambda: validar(ident, pwd))
-boton_validar.configure(padding=(10, 5))
-boton_validar.place(x=20, y=150)
+    boton_validar = ttk.Button(root, text="Ingresar", command=lambda: validar(ident, pwd))
+    boton_validar.configure(padding=(10, 5))
+    boton_validar.place(x=20, y=150)
 
-root.mainloop()
+    root.mainloop()
+
+inicio_sesion()
 
 # import tkinter as tk
 # from tkinter import ttk
