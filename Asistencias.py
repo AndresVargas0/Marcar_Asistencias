@@ -11,19 +11,23 @@ proceso = None
 # VAriable de Conexion
 conexion = sqlite3.connect("database/BD.sqlite3")
 
+recognizer = sr.Recognizer()
+
 # Funcion para insertar la Asistencia
 def agregar_asistencia(code, nombre, fecha, hora, asistencia):
     # Conexion a la BD
+    conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
     # Variable para sacar la hora actual
     hora_str = hora.strftime('%H:%M:%S')
     # Consulta para seleccionar la Fila
-    cursor.execute("SELECT id, asistencia FROM asistencias WHERE nombre = ? AND fecha = ? AND hora = ?",
+    cursor.execute("SELECT id FROM asistencias WHERE nombre = ? AND fecha = ? AND hora = ?",
                    (nombre, fecha, hora_str))
     
     row = cursor.fetchone()
     if row:
         asistencia_actual = row[4]
+        print(asistencia_actual)
         nueva_asistencia = asistencia_actual + 1
 
         cursor.execute("UPDATE asistencias SET asistencia = ? WHERE id = ?",
@@ -37,15 +41,14 @@ def agregar_asistencia(code, nombre, fecha, hora, asistencia):
     conexion.close()
 
 def eliminar_asistencias():
+    conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
     cursor.execute("DELETE FROM asistencias;")
     conexion.commit()
     conexion.close()
 
-recognizer = sr.Recognizer()
-
 def ejecutar_comando(comando):
-    if "marcar asistencia de Juan" in comando:
+    if "Juan" in comando:
         code = 1001
         nombre = "Juan Rojas"
         fecha = datetime.date.today()
@@ -53,7 +56,7 @@ def ejecutar_comando(comando):
         asistencia = 1 
         agregar_asistencia(code, nombre, fecha, hora, asistencia)
         print("Asistencia Agregada")
-    elif "marcar asistencia de José" in comando:
+    elif "José" in comando:
         code = 1002
         nombre = "Jose Paredes"
         fecha = datetime.date.today()
@@ -61,7 +64,7 @@ def ejecutar_comando(comando):
         asistencia = 1
         agregar_asistencia(code, nombre, fecha, hora, asistencia)
         print("Asistencia Agregada")
-    elif "marcar asistencia de Andrés" in comando:
+    elif "Andrés" in comando:
         code = 1003
         nombre = "Andres Vargas"
         fecha = datetime.date.today()
@@ -69,7 +72,7 @@ def ejecutar_comando(comando):
         asistencia = 1
         agregar_asistencia(code, nombre, fecha, hora, asistencia)
         print("Asistencia Agregada")
-    elif "marcar asistencia de Miguel" in comando:
+    elif "Miguel" in comando:
         code = 1004
         nombre = "Miguel"
         fecha = datetime.date.today()
@@ -110,11 +113,26 @@ def escuchar_comando():
 def actualizar_tabla(tree, ide): # Limpia la tabla y recarga los datos
     for row in tree.get_children():
         tree.delete(row)
-
     # Conectar a la base de datos y obtener datos de asistencias
     conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
     cursor.execute("SELECT * FROM asistencias WHERE id = ?", (ide,))
+    datos = cursor.fetchall()
+
+    # Carga los datos en el Treeview
+    for dato in datos:
+        tree.insert("", "end", values=dato)
+
+    # Cierra la conexión con la BD
+    conexion.close()
+
+def actualizar_tabla_admin(tree): # Limpia la tabla y recarga los datos
+    for row in tree.get_children():
+        tree.delete(row)
+    # Conectar a la base de datos y obtener datos de asistencias
+    conexion = sqlite3.connect("database/BD.sqlite3")
+    cursor = conexion.cursor()
+    cursor.execute("SELECT * FROM asistencias")
     datos = cursor.fetchall()
 
     # Carga los datos en el Treeview
@@ -132,6 +150,7 @@ def ventana_admin():
 
     admin.title("Panel de Adminitrador")
     admin.geometry("450x350")
+    admin.resizable(width=False, height=False)
 
     lbl_filtro = tk.Label(admin, text="Buscar")
     lbl_filtro.place(x=20,y=60)
@@ -144,11 +163,15 @@ def ventana_admin():
     lbl_name = ttk.Label(admin, text="User: " + user, font=("Arial",11))
     lbl_name.place(x=20, y=20)
 
+    btn_eliminar_asistencias = ttk.Button(admin, text="Eliminar", command=eliminar_asistencias)
+    btn_eliminar_asistencias.place(x=160,y=20)
+
     boton_salir = ttk.Button(admin, text="Salir", command=lambda:admin.destroy())
     boton_salir.place(x=360, y=20)
 
     def cargar_datos(tree):
         # Conectar a la base de datos SQLite
+        conexion = sqlite3.connect("database/BD.sqlite3")
         cursor = conexion.cursor()
 
         # Ejecutar la consulta para obtener los datos de la tabla
@@ -182,7 +205,7 @@ def ventana_admin():
     cargar_datos(tree)
 
     #Boton para Recargar Datos
-    boton_recargar = ttk.Button(admin, text="Agregar Alumno")
+    boton_recargar = ttk.Button(admin, text="Actualizar", command=lambda:actualizar_tabla_admin(tree))
     tree.place(x=10,y=100)    #Configuracion del Boton Recargar
     boton_recargar.place(x=250,y=20)
 
@@ -225,6 +248,7 @@ def validar(ident, pwd):
 
         cuenta.title("Cuenta de @" + nombre)
         cuenta.geometry("450x320")
+        cuenta.resizable(width=False, height=False)
 
         lbl_name = tk.Label(cuenta, text="Alumno: " + nombre)
         lbl_name.place(x=20, y=20)
@@ -280,79 +304,25 @@ def inicio_sesion():
     root = tk.Tk()
     root.title("Programa de Asistencias")
     root.geometry("250x200")
+    root.configure(bg="black")
+    root.resizable(width=False, height=False)
 
-    lbl_id = Label(root, text="Ingrese su ID:", font=("Arial",11))
+    lbl_id = Label(root, text="Ingrese su ID:", font=("Arial",11), bg="black", fg="white")
     lbl_id.place(x=20, y=20)
-    ident = ttk.Entry(root, width=25, font=("Arial",11))
+    ident = ttk.Entry(root, width=25, font=("Arial",11), foreground="black")
     ident.place(x=20, y=50)
 
-    lbl_pwd = Label(root, text="Ingrese su Contraseña:", font=("Arial",11))
+    lbl_pwd = Label(root, text="Ingrese su Contraseña:", font=("Arial",11), bg="black", fg="white")
     lbl_pwd.place(x=20, y=80)
     pwd = ttk.Entry(root, width=25, show="*", font=("Arial",11))
     pwd.place(x=20, y=110)
 
     boton_validar = ttk.Button(root, text="Ingresar", command=lambda: validar(ident, pwd))
-    boton_validar.configure(padding=(10, 5))
     boton_validar.place(x=20, y=150)
+
+    cancelar = ttk.Button(root, text="Salir", command=root.destroy)
+    cancelar.place(x=150, y=150)
 
     root.mainloop()
 
 inicio_sesion()
-
-# import tkinter as tk
-# from tkinter import ttk
-# import sqlite3
-
-# def cargar_datos(tree):
-#     # Conectar a la base de datos SQLite
-#     conexion = sqlite3.connect("database/BD.sqlite3")
-#     cursor = conexion.cursor()
-
-#     # Ejecutar la consulta para obtener los datos de la tabla
-#     cursor.execute("SELECT * FROM asistencias")
-#     datos = cursor.fetchall()
-
-#     # Limpiar la tabla antes de cargar nuevos datos
-#     for row in tree.get_children():
-#         tree.delete(row)
-
-#     # Cargar datos en la tabla
-#     for dato in datos:
-#         tree.insert("", "end", values=dato)
-
-#     # Cerrar la conexión a la base de datos
-#     conexion.close()
-
-# # Crear la ventana principal
-# ventana = tk.Tk()
-# ventana.title("Tabla de Datos")
-
-# # Crear el widget Treeview
-# tree = ttk.Treeview(ventana, columns=("ID", "Nombre", "Fecha", "Hora" , "Asistencia"), show="headings")
-
-# # Configurar encabezados
-# tree.heading("ID", text="ID")
-# tree.heading("Nombre", text="Nombre")
-# tree.heading("Fecha", text="Fecha")
-# tree.heading("Hora", text="Hora")
-# tree.heading("Asistencia", text="Asistencia")
-
-# # Configurar columnas
-# tree.column("ID", width=30)
-# tree.column("Nombre", width=100)
-# tree.column("Fecha", width=100)
-# tree.column("Hora", width=80)
-# tree.column("Asistencia", width=100)
-
-# # Cargar datos iniciales
-# cargar_datos(tree)
-
-# # Crear un botón para recargar datos
-# boton_recargar = tk.Button(ventana, text="Recargar Datos", command=lambda: cargar_datos(tree))
-
-# # Colocar widgets en la ventana
-# tree.pack(pady=10)
-# boton_recargar.pack(pady=10)
-
-# # Iniciar el bucle principal
-# ventana.mainloop()
