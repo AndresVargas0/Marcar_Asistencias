@@ -8,11 +8,12 @@ import sqlite3
 
 # Variable de proceso Creada sin ningun valor asignado aun
 proceso = None
+# VAriable de Conexion
+conexion = sqlite3.connect("database/BD.sqlite3")
 
 # Funcion para insertar la Asistencia
 def agregar_asistencia(code, nombre, fecha, hora, asistencia):
     # Conexion a la BD
-    conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
     # Variable para sacar la hora actual
     hora_str = hora.strftime('%H:%M:%S')
@@ -36,7 +37,6 @@ def agregar_asistencia(code, nombre, fecha, hora, asistencia):
     conexion.close()
 
 def eliminar_asistencias():
-    conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
     cursor.execute("DELETE FROM asistencias;")
     conexion.commit()
@@ -131,7 +131,15 @@ def ventana_admin():
     admin = tk.Tk()
 
     admin.title("Panel de Adminitrador")
-    admin.geometry("450x310")
+    admin.geometry("450x350")
+
+    lbl_filtro = tk.Label(admin, text="Buscar")
+    lbl_filtro.place(x=20,y=60)
+    filtro = ttk.Entry(admin, width=32, font=("Arial",11))
+    filtro.place(x=70,y=60)
+    btn_filtro = ttk.Button(admin, text="Filtrar", command=lambda: filtrar(filtro))
+    btn_filtro.place(x=350,y=60)
+    
 
     lbl_name = ttk.Label(admin, text="User: " + user, font=("Arial",11))
     lbl_name.place(x=20, y=20)
@@ -141,7 +149,6 @@ def ventana_admin():
 
     def cargar_datos(tree):
         # Conectar a la base de datos SQLite
-        conexion = sqlite3.connect("database/BD.sqlite3")
         cursor = conexion.cursor()
 
         # Ejecutar la consulta para obtener los datos de la tabla
@@ -176,8 +183,22 @@ def ventana_admin():
 
     #Boton para Recargar Datos
     boton_recargar = ttk.Button(admin, text="Agregar Alumno")
-    tree.place(x=10,y=60)    #Configuracion del Boton Recargar
+    tree.place(x=10,y=100)    #Configuracion del Boton Recargar
     boton_recargar.place(x=250,y=20)
+
+def filtrar(filtro):
+    box_filtro = filtro.get()
+    conexion = sqlite3.connect("database/BD.sqlite3")
+    cursor = conexion.cursor()
+    cursor.execute("SELECT * FROM asistencias WHERE nombre = ? OR id = ?", (box_filtro, box_filtro))
+    
+    resultados = cursor.fetchall()
+    
+    print("Los Datos son:")
+    for fila in resultados:
+        print(fila)
+
+    conexion.close()
 
 def validar(ident, pwd):
     ide = ident.get()
