@@ -3,7 +3,7 @@ import sqlite3
 import datetime
 import speech_recognition as sr
 import tkinter as tk
-from tkinter import ttk, Label, PhotoImage
+from tkinter import ttk, Label
 import sqlite3
 
 # Variable de proceso Creada sin ningun valor asignado aun
@@ -14,12 +14,16 @@ conexion = sqlite3.connect("database/BD.sqlite3")
 recognizer = sr.Recognizer()
 
 # Funcion para insertar la Asistencia
-def agregar_asistencia(code, nombre, fecha, hora, asistencia):
+def agregar_asistencia(code,nombre):
     # Conexion a la BD
     conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
-    # Variable para sacar la hora actual
-    hora_str = hora.strftime('%H:%M:%S')
+    # Variables
+    horalimit = "12:15:00"
+    fecha = datetime.date.today()
+    hora = "12:15:00" #datetime.datetime.now().time()
+    hora_str = "12:15:00" #hora.strftime('%H:%M:%S')
+    asistencia = 1 
     # Consulta para seleccionar la Fila
     cursor.execute("SELECT id FROM asistencias WHERE nombre = ? AND fecha = ? AND hora = ?",
                    (nombre, fecha, hora_str))
@@ -32,11 +36,18 @@ def agregar_asistencia(code, nombre, fecha, hora, asistencia):
 
         cursor.execute("UPDATE asistencias SET asistencia = ? WHERE id = ?",
                        (nueva_asistencia, row[4]))
-    else:
-        asistencia = 1
+    elif (hora == horalimit):
+        asistencia = "Puntual"
         cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
                        (code, nombre, fecha, hora_str, asistencia))
-        
+    elif (hora != horalimit):
+        asistencia = "Tardanza"
+        cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
+                       (code, nombre, fecha, hora_str, asistencia))
+    else:
+        asistencia = "0"
+        cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
+                       (code, nombre, fecha, hora_str, asistencia))
     conexion.commit()
     conexion.close()
 
@@ -255,7 +266,7 @@ def validar(ident, pwd):
         lbl_code = tk.Label(cuenta, text="ID: " + code)
         lbl_code.place(x=20, y=40)
 
-        marcar = ttk.Button(cuenta, text="Marcar Asistencia", command=escuchar_comando)
+        marcar = ttk.Button(cuenta, text="Marcar Asistencia", command=lambda: agregar_asistencia(code, nombre))
         marcar.place(x=330, y=10)
 
         boton_actualizar = ttk.Button(cuenta, text="Actualizar", command=lambda:actualizar_tabla(tree, ide))
