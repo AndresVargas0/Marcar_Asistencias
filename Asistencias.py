@@ -19,35 +19,36 @@ def agregar_asistencia(code,nombre):
     conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
     # Variables
-    horalimit = "12:15:00"
     fecha = datetime.date.today()
-    hora = "12:15:00" #datetime.datetime.now().time()
-    hora_str = "12:15:00" #hora.strftime('%H:%M:%S')
-    asistencia = 1 
+    hora = datetime.datetime.now().time()
     # Consulta para seleccionar la Fila
-    cursor.execute("SELECT id FROM asistencias WHERE nombre = ? AND fecha = ? AND hora = ?",
-                   (nombre, fecha, hora_str))
-    
-    row = cursor.fetchone()
-    if row:
-        asistencia_actual = row[4]
-        print(asistencia_actual)
-        nueva_asistencia = asistencia_actual + 1
-
-        cursor.execute("UPDATE asistencias SET asistencia = ? WHERE id = ?",
-                       (nueva_asistencia, row[4]))
-    elif (hora == horalimit):
-        asistencia = "Puntual"
-        cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
-                       (code, nombre, fecha, hora_str, asistencia))
-    elif (hora != horalimit):
-        asistencia = "Tardanza"
-        cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
-                       (code, nombre, fecha, hora_str, asistencia))
+    cursor.execute("SELECT id FROM asistencias WHERE nombre = ? AND fecha = ?",
+                   (nombre, fecha))
+    # Obtiene la primera fila si existe
+    fila = cursor.fetchone()
+    #Inserta la asistencia correspondiente
+    if fila:
+        print("Asistencia ya registrada")
+    #Si llego a la Hora Marcada colocara "Puntual"
     else:
-        asistencia = "0"
+         # Establece el límite de tiempo para la asistencia puntual
+        puntual = datetime.datetime.strptime("07:15:00", "%H:%M:%S").time()
+
+        # Establece el límite de tiempo para la asistencia con tardanza
+        tardanza = datetime.datetime.strptime("12:00:00", "%H:%M:%S").time()
+
+        # Compara la hora actual con los límites de tiempo
+        if hora <= puntual:
+            asistencia = "Puntual"
+        elif puntual < hora <= tardanza:
+            asistencia = "Tardanza"
+        else:
+            asistencia = "No asistió"
         cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
-                       (code, nombre, fecha, hora_str, asistencia))
+                       (code, nombre, fecha, hora.strftime('%H:%M:%S'), asistencia))
+
+        print(f"Asistencia marcada como {asistencia}")
+    #Cerrar la Conexion
     conexion.commit()
     conexion.close()
 
@@ -85,7 +86,7 @@ def ejecutar_comando(comando):
         print("Asistencia Agregada")
     elif "Miguel" in comando:
         code = 1004
-        nombre = "Miguel"
+        nombre = "Miguel "
         fecha = datetime.date.today()
         hora = datetime.datetime.now().time()
         asistencia = 1 
@@ -175,10 +176,13 @@ def ventana_admin():
     lbl_name.place(x=20, y=20)
 
     btn_eliminar_asistencias = ttk.Button(admin, text="Eliminar", command=eliminar_asistencias)
-    btn_eliminar_asistencias.place(x=160,y=20)
+    btn_eliminar_asistencias.place(x=200,y=20)
+
+    btn_agregar = ttk.Button(admin, text="Agregar", command=agregar_alumno)
+    btn_agregar.place(x=120,y=20)
 
     boton_salir = ttk.Button(admin, text="Salir", command=lambda:admin.destroy())
-    boton_salir.place(x=360, y=20)
+    boton_salir.place(x=360,y=20)
 
     def cargar_datos(tree):
         # Conectar a la base de datos SQLite
@@ -218,7 +222,71 @@ def ventana_admin():
     #Boton para Recargar Datos
     boton_recargar = ttk.Button(admin, text="Actualizar", command=lambda:actualizar_tabla_admin(tree))
     tree.place(x=10,y=100)    #Configuracion del Boton Recargar
-    boton_recargar.place(x=250,y=20)
+    boton_recargar.place(x=280,y=20)
+
+def agregar_alumno():
+    # Conecta a la base de datos
+    conexion = sqlite3.connect("database/BD.sqlite3")
+    cursor = conexion.cursor()
+
+    # Crear la ventana principal
+    agregar = tk.Tk()
+    agregar.title("Añadir Datos del Alumno")
+    agregar.geometry("500x500")
+
+    # Crear y empaquetar los widgets
+    id_lbl = ttk.Label(agregar, text="ID: ")
+    id_lbl.pack()
+    ide = ttk.Entry(agregar, width=50)
+    ide.pack()
+
+    nombre_lbl = ttk.Label(agregar, text="Nombre: ")
+    nombre_lbl.pack()
+    nombre = ttk.Entry(agregar, width=50)
+    nombre.pack()
+
+    carrera_lbl = ttk.Label(agregar, text="Carrera: ")
+    carrera_lbl.pack()
+    opciones_carrera = ["Ing. de Software", "Diseño Grafico", "CiberSeguridad", "Mecanica Automotriz", "Diseño de Modas"]
+    carrera = ttk.Combobox(agregar, values=opciones_carrera, width=47)
+    carrera.pack()
+
+    semestre_lbl = ttk.Label(agregar, text="Semestre: ")
+    semestre_lbl.pack()
+    semetres = ["I","II","III","IV","V","VI"]
+    semestre = ttk.Combobox(agregar,values=semetres, width=50)
+    semestre.pack()
+
+    contraseña_lbl = ttk.Label(agregar, text="Contraseña: ")
+    contraseña_lbl.pack()
+    contra = ttk.Entry(agregar, width=50)
+    contra.pack()
+
+    def insertar_datos():
+        # Obtiene los datos de las entradas
+        ide_valor = ide.get()
+        nombre_valor = nombre.get()
+        carrera_valor = carrera.get()
+        semestre_valor = semestre.get()
+        contra_valor = contra.get()
+
+        # Ejecuta la consulta de inserción
+        cursor.execute("INSERT INTO estudiantes (id, nombre, carrera, semestre, contraseña) VALUES (?, ?, ?, ?, ?)",
+                       (ide_valor, nombre_valor, carrera_valor, semestre_valor, contra_valor))
+
+        # Hace commit para guardar los cambios
+        conexion.commit()
+
+        print("Alumno Agregado")
+        agregar.destroy()  # Cierra la ventana después de agregar al alumno
+
+    button_añadir = ttk.Button(agregar, text="Añadir", command=insertar_datos)
+    button_añadir.pack()
+
+    agregar.mainloop()
+
+    # Cierra la conexión a la base de datos después de cerrar la ventana principal
+    conexion.close()
 
 def filtrar(filtro):
     box_filtro = filtro.get()
