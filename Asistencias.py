@@ -19,11 +19,12 @@ def agregar_asistencia(code,nombre):
     conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
     # Variables
+    nombre = nombre
     fecha = datetime.date.today()
     hora = datetime.datetime.now().time()
     # Consulta para seleccionar la Fila
-    cursor.execute("SELECT id FROM asistencias WHERE nombre = ? AND fecha = ?",
-                   (nombre, fecha))
+    cursor.execute("SELECT * FROM asistencias WHERE id = ? AND Nombre = ? AND fecha = ?",
+                   (code,nombre, fecha))
     # Obtiene la primera fila si existe
     fila = cursor.fetchone()
     #Inserta la asistencia correspondiente
@@ -44,7 +45,45 @@ def agregar_asistencia(code,nombre):
             asistencia = "Tardanza"
         else:
             asistencia = "No asistió"
-        cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
+            cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
+                       (code, nombre, fecha, hora.strftime('%H:%M:%S'), asistencia))
+
+        print(f"Asistencia marcada como {asistencia}")
+    #Cerrar la Conexion
+    conexion.commit()
+    conexion.close()
+
+def agregar_asistencia_voz(code, nombre):
+    # Conexion a la BD
+    conexion = sqlite3.connect("database/BD.sqlite3")
+    cursor = conexion.cursor()
+    # Variables
+    nombre = nombre
+    fecha = datetime.date.today()
+    hora = datetime.datetime.now().time()
+    # Consulta para seleccionar la Fila
+    cursor.execute("SELECT * FROM asistencias WHERE id = ? AND Nombre = ? AND fecha = ?",
+                   (code,nombre, fecha))
+    # Obtiene la primera fila si existe
+    fila = cursor.fetchone()
+    if fila:
+        print("Asistencia ya registrada")
+    #Si llego a la Hora Marcada colocara "Puntual"
+    else:
+         # Establece el límite de tiempo para la asistencia puntual
+        puntual = datetime.datetime.strptime("07:15:00", "%H:%M:%S").time()
+
+        # Establece el límite de tiempo para la asistencia con tardanza
+        tardanza = datetime.datetime.strptime("12:00:00", "%H:%M:%S").time()
+
+        # Compara la hora actual con los límites de tiempo
+        if hora <= puntual:
+            asistencia = "Puntual"
+        elif puntual < hora <= tardanza:
+            asistencia = "Tardanza"
+        else:
+            asistencia = "No asistió"
+            cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
                        (code, nombre, fecha, hora.strftime('%H:%M:%S'), asistencia))
 
         print(f"Asistencia marcada como {asistencia}")
@@ -63,18 +102,12 @@ def ejecutar_comando(comando):
     if "Juan" in comando:
         code = 1001
         nombre = "Juan Rojas"
-        fecha = datetime.date.today()
-        hora = datetime.datetime.now().time()
-        asistencia = 1 
-        agregar_asistencia(code, nombre, fecha, hora, asistencia)
+        lambda: agregar_asistencia(code, nombre)
         print("Asistencia Agregada")
     elif "José" in comando:
         code = 1002
         nombre = "Jose Paredes"
-        fecha = datetime.date.today()
-        hora = datetime.datetime.now().time()
-        asistencia = 1
-        agregar_asistencia(code, nombre, fecha, hora, asistencia)
+        agregar_asistencia(code, nombre)
         print("Asistencia Agregada")
     elif "Andrés" in comando:
         code = 1003
@@ -82,23 +115,17 @@ def ejecutar_comando(comando):
         fecha = datetime.date.today()
         hora = datetime.datetime.now().time()
         asistencia = 1
-        agregar_asistencia(code, nombre, fecha, hora, asistencia)
+        agregar_asistencia(code, nombre)
         print("Asistencia Agregada")
-    elif "Miguel" in comando:
+    elif "Gabriel" in comando:
         code = 1004
-        nombre = "Miguel "
-        fecha = datetime.date.today()
-        hora = datetime.datetime.now().time()
-        asistencia = 1 
-        agregar_asistencia(code, nombre, fecha, hora, asistencia)
+        nombre = "Gabriel Garcia"
+        agregar_asistencia(code, nombre)
         print("Asistencia Agregada")
-    elif "marcar asistencia de Jose" in comando:
+    elif "Luis" in comando:
         code = 1005
-        nombre = "Jose"
-        fecha = datetime.date.today()
-        hora = datetime.datetime.now().time()
-        asistencia = 1 
-        agregar_asistencia(code, nombre, fecha, hora, asistencia)
+        nombre = "Luis Mendez"
+        agregar_asistencia(code, nombre)
         print("Asistencia Agregada")
     elif "eliminar asistencias" in comando:
         eliminar_asistencias()
@@ -144,7 +171,7 @@ def actualizar_tabla_admin(tree): # Limpia la tabla y recarga los datos
     # Conectar a la base de datos y obtener datos de asistencias
     conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
-    cursor.execute("SELECT * FROM asistencias")
+    cursor.execute("SELECT asistencias.*, estudiantes.carrera, estudiantes.semestre FROM asistencias CROSS JOIN estudiantes")
     datos = cursor.fetchall()
 
     # Carga los datos en el Treeview
@@ -161,7 +188,7 @@ def ventana_admin():
     admin = tk.Tk()
 
     admin.title("Panel de Adminitrador")
-    admin.geometry("450x350")
+    admin.geometry("650x350")
     admin.resizable(width=False, height=False)
 
     lbl_filtro = tk.Label(admin, text="Buscar")
@@ -190,18 +217,17 @@ def ventana_admin():
         cursor = conexion.cursor()
 
         # Ejecutar la consulta para obtener los datos de la tabla
-        cursor.execute("SELECT * FROM asistencias")
-        datos = cursor.fetchall()
+        cursor.execute("SELECT asistencias.*, estudiantes.carrera, estudiantes.semestre FROM asistencias JOIN estudiantes ON asistencias.id = estudiantes.id")
+        datos_asistencias = cursor.fetchall()
 
-        # Cargar datos en la tabla
-        for dato in datos:
-                tree.insert("", "end", values=dato)
+        # Cargar datos de la tabla 'asistencias' en el Treeview
+        for dato in datos_asistencias:
+            tree.insert("", "end", values=dato)
 
         # Cerrar la conexión a la base de datos
         conexion.close()
 
-    # Crear el Treeview
-    tree = ttk.Treeview(admin, columns=("ID", "Nombre", "Fecha", "Hora" , "Asistencia"), show="headings")
+    tree = ttk.Treeview(admin, columns=("ID", "Nombre", "Fecha", "Hora" , "Asistencia", "Carrera", "Semestre"), show="headings")
 
     # Configurar encabezados
     tree.heading("ID", text="ID")
@@ -209,6 +235,8 @@ def ventana_admin():
     tree.heading("Fecha", text="Fecha")
     tree.heading("Hora", text="Hora")
     tree.heading("Asistencia", text="Asistencia")
+    tree.heading("Carrera", text="Carrera")
+    tree.heading("Semestre", text="Semestre")
 
     # Configurar columnas
     tree.column("ID", width=50)
@@ -216,13 +244,18 @@ def ventana_admin():
     tree.column("Fecha", width=100)
     tree.column("Hora", width=80)
     tree.column("Asistencia", width=100)
+    tree.column("Carrera", width=100)
+    tree.column("Semestre", width=100)
 
+    # Posicionar el Treeview en la ventana
+    tree.place(x=10, y=100)
+
+    # Cargar datos en el Treeview
     cargar_datos(tree)
 
-    #Boton para Recargar Datos
-    boton_recargar = ttk.Button(admin, text="Actualizar", command=lambda:actualizar_tabla_admin(tree))
-    tree.place(x=10,y=100)    #Configuracion del Boton Recargar
-    boton_recargar.place(x=280,y=20)
+    # Botón para Recargar Datos
+    boton_recargar = ttk.Button(admin, text="Actualizar", command=lambda: cargar_datos(tree))
+    boton_recargar.place(x=280, y=20)
 
 def agregar_alumno():
     # Conecta a la base de datos
@@ -404,4 +437,16 @@ def inicio_sesion():
 
     root.mainloop()
 
-inicio_sesion()
+def marcar_por_voz():
+    marcar_por_voz = tk.Tk()
+    marcar_por_voz.geometry("200x200")
+
+    button = ttk.Button(marcar_por_voz, text="Registrar Asistencia", command=escuchar_comando)
+    button.pack()
+
+    button_regis = ttk.Button(marcar_por_voz, text="Ingresar a tu Cuenta", command=inicio_sesion)
+    button_regis.pack()
+
+    marcar_por_voz.mainloop()
+
+marcar_por_voz()
