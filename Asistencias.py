@@ -8,8 +8,6 @@ import sqlite3
 
 # Variable de proceso Creada sin ningun valor asignado aun
 proceso = None
-# VAriable de Conexion
-conexion = sqlite3.connect("database/BD.sqlite3")
 
 recognizer = sr.Recognizer()
 
@@ -439,13 +437,13 @@ def inicio_sesion():
 
 def marcar_por_voz():
     marcar_por_voz = tk.Tk()
-    marcar_por_voz.geometry("200x200")
+    marcar_por_voz.geometry("200x100")
 
     button = ttk.Button(marcar_por_voz, text="Registrar Asistencia", command=escuchar_comando)
-    button.pack()
+    button.place(x=45,y=50)
 
     button_regis = ttk.Button(marcar_por_voz, text="Ingresar a tu Cuenta", command=inicio_sesion)
-    button_regis.pack()
+    button_regis.place(x=45,y=10)
 
     marcar_por_voz.mainloop()
 
