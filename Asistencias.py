@@ -17,7 +17,6 @@ def agregar_asistencia(code,nombre):
     conexion = sqlite3.connect("database/BD.sqlite3")
     cursor = conexion.cursor()
     # Variables
-    nombre = nombre
     fecha = datetime.date.today()
     hora = datetime.datetime.now().time()
     # Consulta para seleccionar la Fila
@@ -28,9 +27,9 @@ def agregar_asistencia(code,nombre):
     #Inserta la asistencia correspondiente
     if fila:
         print("Asistencia ya registrada")
-    #Si llego a la Hora Marcada colocara "Puntual"
+    
     else:
-         # Establece el límite de tiempo para la asistencia puntual
+        # Establece el límite de tiempo para la asistencia puntual
         puntual = datetime.datetime.strptime("07:15:00", "%H:%M:%S").time()
 
         # Establece el límite de tiempo para la asistencia con tardanza
@@ -39,8 +38,12 @@ def agregar_asistencia(code,nombre):
         # Compara la hora actual con los límites de tiempo
         if hora <= puntual:
             asistencia = "Puntual"
+            cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
+                       (code, nombre, fecha, hora.strftime('%H:%M:%S'), asistencia))
         elif puntual < hora <= tardanza:
             asistencia = "Tardanza"
+            cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
+                       (code, nombre, fecha, hora.strftime('%H:%M:%S'), asistencia))
         else:
             asistencia = "No asistió"
             cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
@@ -77,8 +80,12 @@ def agregar_asistencia_voz(code, nombre):
         # Compara la hora actual con los límites de tiempo
         if hora <= puntual:
             asistencia = "Puntual"
+            cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
+                       (code, nombre, fecha, hora.strftime('%H:%M:%S'), asistencia))
         elif puntual < hora <= tardanza:
             asistencia = "Tardanza"
+            cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
+                       (code, nombre, fecha, hora.strftime('%H:%M:%S'), asistencia))
         else:
             asistencia = "No asistió"
             cursor.execute("INSERT INTO asistencias (id, nombre, fecha, hora, asistencia) VALUES (?, ?, ?, ?, ?)",
@@ -110,9 +117,6 @@ def ejecutar_comando(comando):
     elif "Andrés" in comando:
         code = 1003
         nombre = "Andres Vargas"
-        fecha = datetime.date.today()
-        hora = datetime.datetime.now().time()
-        asistencia = 1
         agregar_asistencia(code, nombre)
         print("Asistencia Agregada")
     elif "Gabriel" in comando:
@@ -365,7 +369,7 @@ def validar(ident, pwd):
         lbl_code = tk.Label(cuenta, text="ID: " + code)
         lbl_code.place(x=20, y=40)
 
-        marcar = ttk.Button(cuenta, text="Marcar Asistencia", command=lambda: agregar_asistencia(code, nombre))
+        marcar = ttk.Button(cuenta, text="Marcar Asistencia", command=lambda:agregar_asistencia(code, nombre))
         marcar.place(x=330, y=10)
 
         boton_actualizar = ttk.Button(cuenta, text="Actualizar", command=lambda:actualizar_tabla(tree, ide))
